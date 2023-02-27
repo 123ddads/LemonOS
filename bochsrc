@@ -11,7 +11,7 @@ vgaromimage: file=/usr/share/vgabios/vgabios.bin
 
 # what disk images will be used
 # floppya: 1_44=freedos.img, status=inserted
-floppya: 1_44=D.T.OS, status=inserted
+floppya: 1_44=L.M.OS, status=inserted
 
 # choose the boot disk.
 boot: a
