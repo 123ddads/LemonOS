@@ -1,6 +1,7 @@
 
 #include "interrupt.h"
 #include "task.h"
+#include "mutex.h"
 
 extern volatile Task* gCTaskAddr;
 
@@ -18,11 +19,18 @@ void TimerHandler()
     SendEOI(MASTER_EOI_PORT);
 }
 
-void SysCallHandler(ushort ax)   // __cdecl__
+void SysCallHandler(uint type, uint cmd, uint param1, uint param2)   // __cdecl__
 {  
-    if( ax == 0 )
+    switch(type)
     {
-        KillTask();
+        case 0:
+            KillTask();
+            break;
+        case 1:
+            MutexCallHandler(cmd, param1);
+            break;
+        default:
+            break;
     }
 }
 
