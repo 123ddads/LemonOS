@@ -62,6 +62,7 @@ extern void (* const LoadTask)(volatile Task* pt);
 void TaskModInit();
 void LaunchTask();
 void Schedule();
+void MMtxSchedule(uint action);
 void KillTask();
 
 #endif
