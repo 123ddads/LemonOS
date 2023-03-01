@@ -2,6 +2,7 @@
 #include "app.h"
 #include "utility.h"
 #include "memory.h"
+#include "syscall.h"
 
 #define MAX_APP_NUM    16
 
@@ -30,7 +31,7 @@ static void RegApp(const char* name, void(*tmain)(), byte pri)
 void AppMain()
 {
     RegApp("Task A", TaskA, 255);
-    // RegApp("Task B", TaskB, 255);
+    RegApp("Task B", TaskB, 255);
     // RegApp("Task C", TaskC, 255);
     // RegApp("Task D", TaskD, 255);
 }
@@ -52,45 +53,49 @@ uint GetAppNum()
     return gAppNum;
 }
 
+static uint g_mutex = 0;
+static int i = 0;
 
 void TaskA()
 {
-    int i = 0;
-    uint* p = NULL;
-    
     SetPrintPos(0, 12);
     
     PrintString(__FUNCTION__);
     PrintChar('\n');
     
-    p = (uint*)Malloc(sizeof(uint) * 10);
+    g_mutex = CreateMutex();
     
-    PrintIntHex(p);
-    PrintChar('\n');
+    EnterCritical(g_mutex);
     
-    *p = 6666;
+    for(i=0; i<50; i++)
+    {
+        SetPrintPos(8, 12);
+        PrintChar('A' + i % 26);
+        Delay(1);
+    }
     
-    PrintIntDec(*p);
-    PrintChar('\n');
-    
-    Free(p);
+    ExitCritical(g_mutex);
 }
 
 void TaskB()
 {
-    int i = 0;
-    
-    SetPrintPos(0, 13);
+    SetPrintPos(0, 16);
     
     PrintString(__FUNCTION__);
     
+    EnterCritical(g_mutex);
+    
+    i = 0;
+    
     while(1)
     {
-        SetPrintPos(8, 13);
+        SetPrintPos(8, 16);
         PrintChar('0' + i);
         i = (i + 1) % 10;
         Delay(1);
     }
+    
+    ExitCritical(g_mutex);
 }
 
 void TaskC()
