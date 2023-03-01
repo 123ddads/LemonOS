@@ -36,8 +36,8 @@ static void TaskEntry()
     
     // to destory current task here
     asm volatile(
-        "movw  $0,  %ax \n"
-        "int   $0x80    \n"
+        "movl  $0,  %eax \n"    // type
+        "int   $0x80     \n"
     );
 }
 
@@ -161,6 +161,32 @@ static void RunningToReady()
     }
 }
 
+static void RunningToWaitting()
+{
+    if( Queue_Length(&gRunningTask) > 0 )
+    {
+        TaskNode* tn = (TaskNode*)Queue_Front(&gRunningTask);
+        
+        if( !IsEqual(tn, (QueueNode*)gIdleTask) )
+        {
+            Queue_Remove(&gRunningTask);
+            Queue_Add(&gWaittingTask, (QueueNode*)tn);
+        }
+    }
+}
+
+static void WaittingToReady()
+{
+    while( Queue_Length(&gWaittingTask) > 0 )
+    {
+        TaskNode* tn = (TaskNode*)Queue_Front(&gWaittingTask);
+        
+        Queue_Remove(&gWaittingTask);
+        Queue_Add(&gReadyTask, (QueueNode*)tn);
+    }
+}
+
+
 
 void TaskModInit()
 {
@@ -207,6 +233,30 @@ void LaunchTask()
     RunTask(gCTaskAddr);
 }
 
+void MtxSchedule(uint action)
+{
+    if( IsEqual(action, NOTIFY) )
+    {
+        WaittingToReady();
+    }
+    else if( IsEqual(action, WAIT) )
+    {
+        RunningToWaitting();
+    
+        ReadyToRunning();
+        
+        CheckRunningTask();
+        
+        Queue_Rotate(&gRunningTask);
+        
+        gCTaskAddr = &((TaskNode*)Queue_Front(&gRunningTask))->task;
+        
+        PrepareForRun(gCTaskAddr);
+        
+        LoadTask(gCTaskAddr);
+    }
+}
+
 void Schedule()
 {
     RunningToReady();
@@ -232,6 +282,5 @@ void KillTask()
     
     Schedule();
 }
-
 
 
