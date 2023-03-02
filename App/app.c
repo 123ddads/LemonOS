@@ -4,6 +4,9 @@
 #include "memory.h"
 #include "syscall.h"
 
+#include "demo1.h"
+#include "demo2.h"
+
 #define MAX_APP_NUM    16
 
 static AppInfo gAppToRun[MAX_APP_NUM] = {0};
@@ -30,10 +33,20 @@ static void RegApp(const char* name, void(*tmain)(), byte pri)
 
 void AppMain()
 {
-    RegApp("Task A", TaskA, 255);
-    RegApp("Task B", TaskB, 255);
+    // RegApp("Task A", TaskA, 255);
+    // RegApp("Task B", TaskB, 255);
     // RegApp("Task C", TaskC, 255);
     // RegApp("Task D", TaskD, 255);
+    
+    // RegApp("PA", ProducerA, 255);
+    // RegApp("PB", ProducerB, 255);
+    // RegApp("CA", ConsumerA, 255);
+    // RegApp("CB", ConsumerB, 255);
+    
+    RegApp("Writer",  Writer, 255);
+    RegApp("ReaderA", Reader, 255);
+    RegApp("ReaderB", Reader, 255);
+    RegApp("ReaderC", Reader, 255);
 }
 
 AppInfo* GetAppToRun(uint index)
@@ -63,8 +76,10 @@ void TaskA()
     PrintString(__FUNCTION__);
     PrintChar('\n');
     
-    g_mutex = CreateMutex();
+    g_mutex = CreateMutex(Normal);
     
+    EnterCritical(g_mutex);
+    EnterCritical(g_mutex);
     EnterCritical(g_mutex);
     
     for(i=0; i<50; i++)
@@ -83,11 +98,13 @@ void TaskB()
     
     PrintString(__FUNCTION__);
     
+    // ExitCritical(g_mutex);
+    
     EnterCritical(g_mutex);
     
     i = 0;
     
-    while(1)
+    while(0)
     {
         SetPrintPos(8, 16);
         PrintChar('0' + i);
@@ -95,7 +112,20 @@ void TaskB()
         Delay(1);
     }
     
+    SetPrintPos(8, 16);
+    
+    i = DestroyMutex(g_mutex);
+    
+    PrintIntDec(i);
+    PrintChar('\n');
+    
     ExitCritical(g_mutex);
+    
+    i = DestroyMutex(g_mutex);
+    
+    PrintIntDec(i);
+    PrintChar('\n');
+    
 }
 
 void TaskC()
