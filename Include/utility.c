@@ -34,3 +34,45 @@ char* StrCpy(char* dst, const char* src, int n)
     
     return ret;
 }
+
+int StrLen(const char* s)
+{
+    int ret = 0;
+    
+    while( s && s[ret] )
+    {
+        ret++;
+    }
+    
+    return ret;
+}
+
+int StrCmp(const char* left, const char* right, uint n)
+{
+    int ret = 1;
+    
+    if( !IsEqual(left, right) )
+    {
+        int lLen = StrLen(left);
+        int rLen = StrLen(right);
+        int m = Min(lLen, rLen);
+        int i = 0;
+        
+        n = Min(m, n);
+        ret = IsEqual(lLen, rLen);
+        
+        for(i=0; (i<n) && ret; i++)
+        {
+            ret = IsEqual(left[i], right[i]);
+            
+            if( !ret )
+            {
+                break;
+            }
+        }
+    }
+    
+    return ret;
+}
+
+
