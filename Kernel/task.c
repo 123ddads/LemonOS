@@ -66,12 +66,37 @@ static void InitTask(Task* pt, uint id, const char* name, void(*entry)(), ushort
     
     StrCpy(pt->name, name, sizeof(pt->name)-1);
     
+    Queue_Init(&pt->wait);
+    
     SetDescValue(AddrOff(pt->ldt, LDT_VIDEO_INDEX),  0xB8000, 0x07FFF, DA_DRWA + DA_32 + DA_DPL3);
     SetDescValue(AddrOff(pt->ldt, LDT_CODE32_INDEX), 0x00,    KernelHeapBase - 1, DA_C + DA_32 + DA_DPL3);
     SetDescValue(AddrOff(pt->ldt, LDT_DATA32_INDEX), 0x00,    KernelHeapBase - 1, DA_DRW + DA_32 + DA_DPL3);
     
     pt->ldtSelector = GDT_TASK_LDT_SELECTOR;
     pt->tssSelector = GDT_TASK_TSS_SELECTOR;
+}
+
+static Task* FindTaskByName(const char* name)
+{
+    Task* ret = NULL;
+    
+    if( !StrCmp(name, "IdleTask", -1) )
+    {
+        int i = 0;
+        
+        for(i=0; i<MAX_TASK_BUFF_NUM; i++)
+        {
+            TaskNode* tn = AddrOff(gTaskBuff, i);
+            
+            if( tn->task.id && StrCmp(tn->task.name, name, -1) )
+            {
+                ret = &tn->task;
+                break;
+            }
+        }
+    }
+    
+    return ret;
 }
 
 static void PrepareForRun(volatile Task* pt)
@@ -161,7 +186,7 @@ static void RunningToReady()
     }
 }
 
-static void RunningToWaitting()
+static void RunningToWaitting(Queue* wq)
 {
     if( Queue_Length(&gRunningTask) > 0 )
     {
@@ -170,23 +195,21 @@ static void RunningToWaitting()
         if( !IsEqual(tn, (QueueNode*)gIdleTask) )
         {
             Queue_Remove(&gRunningTask);
-            Queue_Add(&gWaittingTask, (QueueNode*)tn);
+            Queue_Add(wq, (QueueNode*)tn);
         }
     }
 }
 
-static void WaittingToReady()
+static void WaittingToReady(Queue* wq)
 {
-    while( Queue_Length(&gWaittingTask) > 0 )
+    while( Queue_Length(wq) > 0 )
     {
-        TaskNode* tn = (TaskNode*)Queue_Front(&gWaittingTask);
+        TaskNode* tn = (TaskNode*)Queue_Front(wq);
         
-        Queue_Remove(&gWaittingTask);
+        Queue_Remove(wq);
         Queue_Add(&gReadyTask, (QueueNode*)tn);
     }
 }
-
-
 
 void TaskModInit()
 {
@@ -224,43 +247,8 @@ void TaskModInit()
     CheckRunningTask();
 }
 
-void LaunchTask()
+static void ScheduleNext()
 {
-    gCTaskAddr = &((TaskNode*)Queue_Front(&gRunningTask))->task;
-    
-    PrepareForRun(gCTaskAddr);
-    
-    RunTask(gCTaskAddr);
-}
-
-void MtxSchedule(uint action)
-{
-    if( IsEqual(action, NOTIFY) )
-    {
-        WaittingToReady();
-    }
-    else if( IsEqual(action, WAIT) )
-    {
-        RunningToWaitting();
-    
-        ReadyToRunning();
-        
-        CheckRunningTask();
-        
-        Queue_Rotate(&gRunningTask);
-        
-        gCTaskAddr = &((TaskNode*)Queue_Front(&gRunningTask))->task;
-        
-        PrepareForRun(gCTaskAddr);
-        
-        LoadTask(gCTaskAddr);
-    }
-}
-
-void Schedule()
-{
-    RunningToReady();
-    
     ReadyToRunning();
     
     CheckRunningTask();
@@ -274,13 +262,70 @@ void Schedule()
     LoadTask(gCTaskAddr);
 }
 
+void LaunchTask()
+{
+    gCTaskAddr = &((TaskNode*)Queue_Front(&gRunningTask))->task;
+    
+    PrepareForRun(gCTaskAddr);
+    
+    RunTask(gCTaskAddr);
+}
+
+void MtxSchedule(uint action)
+{
+    if( IsEqual(action, NOTIFY) )
+    {
+        WaittingToReady(&gWaittingTask);
+    }
+    else if( IsEqual(action, WAIT) )
+    {
+        RunningToWaitting(&gWaittingTask);
+        ScheduleNext();
+    }
+}
+
+void Schedule()
+{
+    RunningToReady();
+    ScheduleNext();
+}
+
 void KillTask()
 {
     QueueNode* node = Queue_Remove(&gRunningTask);
+    Task* task = &((TaskNode*)node)->task;
+    
+    WaittingToReady(&task->wait);
+    
+    task->id = 0;
     
     Queue_Add(&gFreeTaskNode, node);
     
     Schedule();
 }
 
+void WaitTask(const char* name)
+{
+    Task* task = FindTaskByName(name);
+    
+    if( task )
+    {
+        RunningToWaitting(&task->wait);
+        ScheduleNext();
+    }
+}
 
+void TaskCallHandler(uint cmd, uint param1, uint param2)
+{
+    switch(cmd)
+    {
+        case 0:
+            KillTask();
+            break;
+        case 1:
+            WaitTask((char*)param1);
+            break;
+        default:
+            break;
+    }
+}
