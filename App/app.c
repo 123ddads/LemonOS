@@ -17,6 +17,10 @@ void TaskB();
 void TaskC();
 void TaskD();
 
+void CookRice();
+void CookDish();
+void HaveDinner();
+
 static void RegApp(const char* name, void(*tmain)(), byte pri)
 {
     if( gAppNum < MAX_APP_NUM )
@@ -38,15 +42,9 @@ void AppMain()
     // RegApp("Task C", TaskC, 255);
     // RegApp("Task D", TaskD, 255);
     
-    // RegApp("PA", ProducerA, 255);
-    // RegApp("PB", ProducerB, 255);
-    // RegApp("CA", ConsumerA, 255);
-    // RegApp("CB", ConsumerB, 255);
-    
-    RegApp("Writer",  Writer, 255);
-    RegApp("ReaderA", Reader, 255);
-    RegApp("ReaderB", Reader, 255);
-    RegApp("ReaderC", Reader, 255);
+    RegApp("CookRice", CookRice, 255);
+    RegApp("CookDish", CookDish, 255);
+    RegApp("HaveDinner", HaveDinner, 255);
 }
 
 AppInfo* GetAppToRun(uint index)
@@ -69,6 +67,50 @@ uint GetAppNum()
 static uint g_mutex = 0;
 static int i = 0;
 
+void CookRice()
+{
+    int i = 0;
+    
+    SetPrintPos(0, 12);
+    
+    PrintString(__FUNCTION__);
+    PrintChar('\n');
+    
+    for(i=0; i<50; i++)
+    {
+        SetPrintPos(10, 12);
+        PrintChar('A' + i % 26);
+        Delay(1);
+    }
+}
+
+void CookDish()
+{
+    int i = 0;
+    
+    SetPrintPos(0, 14);
+    
+    PrintString(__FUNCTION__);
+    PrintChar('\n');
+    
+    for(i=0; i<30; i++)
+    {
+        SetPrintPos(10, 14);
+        PrintChar('0' + i % 10);
+        Delay(1);
+    }
+}
+
+void HaveDinner()
+{
+    Wait("CookDish");
+    Wait("CookRice");
+    
+    SetPrintPos(10, 16);
+    PrintString("Having dinner...\n");
+}
+
+
 void TaskA()
 {
     SetPrintPos(0, 12);
@@ -76,20 +118,15 @@ void TaskA()
     PrintString(__FUNCTION__);
     PrintChar('\n');
     
-    g_mutex = CreateMutex(Normal);
+    PrintIntDec(StrLen("a"));
+    PrintChar('\n');
     
-    EnterCritical(g_mutex);
-    EnterCritical(g_mutex);
-    EnterCritical(g_mutex);
+    char a[] = "abcd";
+    char b[] = "abce";
     
-    for(i=0; i<50; i++)
-    {
-        SetPrintPos(8, 12);
-        PrintChar('A' + i % 26);
-        Delay(1);
-    }
+    PrintIntDec(StrCmp(a, b, 3));
+    PrintChar('\n');
     
-    ExitCritical(g_mutex);
 }
 
 void TaskB()
