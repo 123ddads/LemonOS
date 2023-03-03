@@ -3,11 +3,18 @@
 
 #include "type.h"
 
-void Exit();
+enum
+{
+    Normal,
+    Strict
+};
 
-uint CreateMutex();
+void Exit();
+void Wait(const char* name);
+
+uint CreateMutex(uint type);
 void EnterCritical(uint mutex);
 void ExitCritical(uint mutex);
-void DestroyMutex(uint mutex);
+uint DestroyMutex(uint mutex);
 
 #endif
