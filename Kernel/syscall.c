@@ -1,5 +1,6 @@
 
 #include "syscall.h"
+#include "app.h"
 
 #define SysCall(type, cmd, param1, param2)    asm volatile(                                  \
                                                              "movl  $" #type ",  %%eax \n"   \
@@ -24,6 +25,22 @@ void Wait(const char* name)
         SysCall(0, 1, name, 0);
     }
 }
+
+
+void RegApp(const char* name, void(*tmain)(), byte pri)
+{
+    if( name && tmain )
+    {
+        AppInfo info = {0};
+        
+        info.name = name;
+        info.tmain = tmain;
+        info.priority = pri;
+        
+        SysCall(0, 2, &info, 0);
+    }
+}
+
 
 uint CreateMutex(uint type)
 {
