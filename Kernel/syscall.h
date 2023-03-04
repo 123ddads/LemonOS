@@ -11,6 +11,7 @@ enum
 
 void Exit();
 void Wait(const char* name);
+void RegApp(const char* name, void(*tmain)(), byte pri);
 
 uint CreateMutex(uint type);
 void EnterCritical(uint mutex);
