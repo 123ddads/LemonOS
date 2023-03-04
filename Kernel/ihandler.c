@@ -3,6 +3,8 @@
 #include "task.h"
 #include "mutex.h"
 
+extern byte ReadPort(ushort port);
+
 extern volatile Task* gCTaskAddr;
 
 void TimerHandler()
@@ -15,6 +17,16 @@ void TimerHandler()
     {
         Schedule();
     }
+    
+    SendEOI(MASTER_EOI_PORT);
+}
+
+void KeyboardHandler()
+{
+    byte kc = ReadPort(0x60);
+    
+    PrintIntHex(kc);
+    PrintChar(' ');
     
     SendEOI(MASTER_EOI_PORT);
 }
