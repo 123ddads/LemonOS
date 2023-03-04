@@ -2,11 +2,16 @@
 
 global _start
 global TimerHandlerEntry
+global KeyboardHandlerEntry
 global SysCallHandlerEntry
 global PageFaultHandlerEntry
 global SegmentFaultHandlerEntry
 
+global ReadPort
+global WritePort
+
 extern TimerHandler
+extern KeyboardHandler
 extern SysCallHandler
 extern PageFaultHandler
 extern SegmentFaultHandler
@@ -32,9 +37,9 @@ extern ClearScreen
     push fs
     push gs
     
-    mov dx, ss
-    mov ds, dx
-    mov es, dx
+    mov si, ss
+    mov ds, si
+    mov es, si
     
     mov esp, BaseOfLoader
 %endmacro
@@ -51,9 +56,9 @@ extern ClearScreen
     push fs
     push gs
     
-    mov dx, ss
-    mov ds, dx
-    mov es, dx
+    mov si, ss
+    mov ds, si
+    mov es, si
     
     mov esp, BaseOfLoader
 %endmacro
@@ -106,9 +111,6 @@ InitGlobal:
     mov eax, dword [InitInterruptEntry]
     mov dword [InitInterrupt], eax
     
-    mov eax, dword [EnableTimerEntry]
-    mov dword [EnableTimer], eax
-    
     mov eax, dword [SendEOIEntry]
     mov dword [SendEOI], eax
     
@@ -118,7 +120,49 @@ InitGlobal:
     leave
     
     ret
+
+;
+; byte ReadPort(ushort port)
+; 
+ReadPort:
+    push ebp
+    mov  ebp, esp
     
+    xor eax, eax
+    
+    mov dx, [ebp + 8]
+    in  al, dx
+    
+    nop
+    nop
+    nop
+    
+    leave
+    
+    ret
+
+;
+; void WritePort(ushort port, byte value)
+;
+WritePort:
+    push ebp
+    mov  ebp, esp
+    
+    xor eax, eax
+    
+    mov dx, [ebp + 8]
+    mov al, [ebp + 12]
+    out dx, al
+    
+    nop
+    nop
+    nop
+    
+    leave
+    
+    ret
+
+
 ;
 ;
 TimerHandlerEntry:
@@ -128,11 +172,24 @@ EndISR
 
 ;
 ;
+KeyboardHandlerEntry:
+BeginISR
+    call KeyboardHandler
+EndISR
+
+;
+;
 SysCallHandlerEntry:
 BeginISR
-    push ax
+    push edx
+    push ecx
+    push ebx
+    push eax
     call SysCallHandler
-    pop ax
+    pop eax
+    pop ebx
+    pop ecx
+    pop edx
 EndISR
 
 ;
