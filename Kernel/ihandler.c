@@ -1,11 +1,10 @@
 
 #include "interrupt.h"
+#include "keyboard.h"
 #include "task.h"
 #include "mutex.h"
 
 extern byte ReadPort(ushort port);
-
-extern volatile Task* gCTaskAddr;
 
 void TimerHandler()
 {
@@ -25,10 +24,9 @@ void KeyboardHandler()
 {
     byte sc = ReadPort(0x60);
     
-    PrintIntHex(sc);
-    PrintChar(' ');
-    
     PutScanCode(sc);
+    
+    NotifyKeyCode();
     
     SendEOI(MASTER_EOI_PORT);
 }
@@ -43,6 +41,9 @@ void SysCallHandler(uint type, uint cmd, uint param1, uint param2)   // __cdecl_
         case 1:
             MutexCallHandler(cmd, param1, param2);
             break;
+        case 2:
+            KeyCallHandler(cmd, param1, param2);
+            break;
         default:
             break;
     }
@@ -53,7 +54,7 @@ void PageFaultHandler()
     SetPrintPos(0, 6);
     
     PrintString("Page Fault: kill ");
-    PrintString(gCTaskAddr->name);
+    PrintString(CurrentTaskName());
     
     KillTask();
 }
@@ -63,7 +64,7 @@ void SegmentFaultHandler()
     SetPrintPos(0, 6);
     
     PrintString("Segment Fault: kill ");
-    PrintString(gCTaskAddr->name);
+    PrintString(CurrentTaskName());
     
     KillTask();
 }
