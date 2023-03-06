@@ -14,7 +14,8 @@
 void (* const RunTask)(volatile Task* pt) = NULL;
 void (* const LoadTask)(volatile Task* pt) = NULL;
 
-volatile Task* gCTaskAddr = NULL;
+volatile Task* gCTaskAddr = NULL; /* DO NOT USE IT DIRECTLY */
+
 static TaskNode gTaskBuff[MAX_TASK_BUFF_NUM] = {0};
 static Queue gAppToRun = {0};
 static Queue gFreeTaskNode = {0};
@@ -345,6 +346,28 @@ static void MutexSchedule(uint action, Event* event)
 
 static void KeySchedule(uint action, Event* event)
 {
+    Queue* wait = (Queue*)event->id;
+    
+    if( action == NOTIFY )
+    {
+        uint kc = event->param1;
+        ListNode* pos = NULL;
+        
+        List_ForEach((List*)wait, pos)
+        {
+            TaskNode* tn = (TaskNode*)pos;
+            Event* we = tn->task.event;
+            uint* ret = (uint*)we->param1;
+            
+            *ret = kc;
+        }
+        
+        WaittingToReady(wait);
+    }
+    else if( action == WAIT )
+    {
+        WaitEvent(wait, event);
+    }
 }
 
 
@@ -413,3 +436,14 @@ void TaskCallHandler(uint cmd, uint param1, uint param2)
             break;
     }
 }
+
+const char* CurrentTaskName()
+{
+    return gCTaskAddr->name;
+}
+
+uint CurrentTaskId()
+{
+    return gCTaskAddr->id;
+}
+
