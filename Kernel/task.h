@@ -7,7 +7,8 @@
 #include "event.h"
 #include "app.h"
 
-typedef struct {
+typedef struct 
+{
     uint gs;
     uint fs;
     uint es;
@@ -82,5 +83,8 @@ void TaskCallHandler(uint cmd, uint param1, uint param2);
 void EventSchedule(uint action, Event* event);
 void KillTask();
 void WaitTask(const char* name);
+
+const char* CurrentTaskName();
+uint CurrentTaskId();
 
 #endif
