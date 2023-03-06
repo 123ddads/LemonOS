@@ -4,7 +4,9 @@
 
 #include "type.h"
 
+void KeyboardModInit();
 void PutScanCode(byte sc);
-uint FetchKeyCode();
+void NotifyKeyCode();
+void KeyCallHandler(uint cmd, uint param1, uint param2);
 
 #endif
