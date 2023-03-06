@@ -12,7 +12,8 @@ KERNEL_SRC := kmain.c      \
               queue.c      \
               memory.c     \
               mutex.c	   \
-	      keyboard.c
+	      keyboard.c   \
+	      event.c
               
 APP_SRC :=    screen.c     \
               utility.c    \
