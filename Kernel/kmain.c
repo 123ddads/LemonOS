@@ -7,7 +7,7 @@ void KMain()
 {
     void (*AppModInit)() = (void*)BaseOfApp;
     
-    PrintString("L.M.OS\n");
+    PrintString("LemonOS\n");
     
     PrintString("GDT Entry: ");
     PrintIntHex((uint)gGdtInfo.entry);
