@@ -2,50 +2,25 @@
 #include "mutex.h"
 #include "memory.h"
 #include "task.h"
+#include "event.h"
+
+extern volatile Task* gCTaskAddr;
 
 static List gMList = {0};
 
-void MutexModInit()
-{
-    List_Init(&gMList);
-}
-
-void MutexCallHandler(uint cmd, uint param)
-{
-    if( cmd == 0 )
-    {
-        uint* pRet = (uint*)param;
-        
-        *pRet = (uint)SysCreateMutex();
-    }
-    else if( cmd == 1 )
-    {
-        SysEnterCritical((Mutex*)param);
-    }
-    else if( cmd == 2 )
-    {
-        SysExitCritical((Mutex*)param);
-    }
-    else 
-    {
-        SysDestroyMutex((Mutex*)param);
-    }
-}
-
-Mutex* SysCreateMutex()
+static Mutex* SysCreateMutex(uint type)
 {
     Mutex* ret = Malloc(sizeof(Mutex));
     
     if( ret )
     {
+        Queue_Init(&ret->wait);
+        
         ret->lock = 0;  
+        ret->type = type;
         
         List_Add(&gMList, (ListNode*)ret);
     }
-    
-    PrintString("Mutex ID: ");
-    PrintIntHex(ret);
-    PrintChar('\n');
     
     return ret;
 }
@@ -67,22 +42,26 @@ static uint IsMutexValid(Mutex* mutex)
     return ret;
 }
 
-void SysDestroyMutex(Mutex* mutex)
+static void SysDestroyMutex(Mutex* mutex, uint* result)
 {
     if( mutex )
     {
         ListNode* pos = NULL;
+        
+        *result = 0;
     
         List_ForEach(&gMList, pos)
         {
             if( IsEqual(pos, mutex) )
             {
-                List_DelNode(pos);
-                
-                Free(pos);
-                
-                PrintString("Destroy Mutex: ");
-                PrintIntHex(pos);
+                if( IsEqual(mutex->lock, 0) )
+                {
+                    List_DelNode(pos);
+                    
+                    Free(pos);
+                    
+                    *result = 1;
+                }
                 
                 break;
             }
@@ -90,21 +69,89 @@ void SysDestroyMutex(Mutex* mutex)
     }
 }
 
-void SysEnterCritical(Mutex* mutex)
+static void DoWait(Mutex* mutex, uint* wait)
 {
-    if( mutex && IsMutexValid(mutex) )
+    Event* evt = CreateEvent(MutexEvent, (uint)mutex, 0, 0);
+    
+    if( evt )
     {
-        if( mutex->lock )
+        *wait = 1;
+        
+        EventSchedule(WAIT, evt);
+    }
+}
+
+static void SysNormalEnter(Mutex* mutex, uint* wait)
+{
+    if( mutex->lock )
+    {
+        DoWait(mutex, wait);
+    }
+    else
+    {
+        mutex->lock = 1;
+        
+        *wait = 0;
+    }
+}
+
+static void SysStrictEnter(Mutex* mutex,uint* wait)
+{
+    if( mutex->lock )
+    {
+        if( IsEqual(mutex->lock, gCTaskAddr) )
         {
-            PrintString("Move current to waitting status.\n");
-            MtxSchedule(WAIT);
+            *wait = 0;
         }
         else
-        {
-            mutex->lock = 1;
-            
-            PrintString("Enter critical section, access critical resource.\n");
+        {         
+            DoWait(mutex, wait);
         }
+    }
+    else
+    {
+        mutex->lock = (uint)gCTaskAddr;
+            
+        *wait = 0;
+    }
+}
+
+static void SysEnterCritical(Mutex* mutex, uint* wait)
+{
+    if( mutex && IsMutexValid(mutex) )
+    { 
+        switch(mutex->type)
+        {
+            case Normal:
+                SysNormalEnter(mutex, wait);
+                break;
+            case Strict:
+                SysStrictEnter(mutex, wait);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+static void SysNormalExit(Mutex* mutex)
+{
+    Event evt = {MutexEvent, (uint)mutex, 0, 0};
+    
+    mutex->lock = 0;
+    
+    EventSchedule(NOTIFY, &evt);
+}
+
+static void SysStrictExit(Mutex* mutex)
+{
+    if( IsEqual(mutex->lock, gCTaskAddr) )
+    {
+        SysNormalExit(mutex);
+    }
+    else
+    {   
+        KillTask();
     }
 }
 
@@ -113,10 +160,43 @@ void SysExitCritical(Mutex* mutex)
 {
     if( mutex && IsMutexValid(mutex) )
     {
-        mutex->lock = 0;
-        
-        PrintString("Notify all task to run again, critical resource is available.\n");
-        MtxSchedule(NOTIFY);
+        switch(mutex->type)
+        {
+            case Normal:
+                SysNormalExit(mutex);
+                break;
+            case Strict:
+                SysStrictExit(mutex);
+                break;
+            default:
+                break;
+        }
     }
 }
 
+void MutexModInit()
+{
+    List_Init(&gMList);
+}
+
+void MutexCallHandler(uint cmd, uint param1, uint param2)
+{
+    if( cmd == 0 )
+    {
+        uint* pRet = (uint*)param1;
+        
+        *pRet = (uint)SysCreateMutex(param2);
+    }
+    else if( cmd == 1 )
+    {
+        SysEnterCritical((Mutex*)param1, (uint*)param2);
+    }
+    else if( cmd == 2 )
+    {
+        SysExitCritical((Mutex*)param1);
+    }
+    else 
+    {
+        SysDestroyMutex((Mutex*)param1, (uint*)param2);
+    }
+}
