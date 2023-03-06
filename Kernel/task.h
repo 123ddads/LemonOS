@@ -4,6 +4,8 @@
 
 #include "kernel.h"
 #include "queue.h"
+#include "event.h"
+#include "app.h"
 
 typedef struct {
     uint gs;
@@ -49,6 +51,7 @@ typedef struct
     char       name[16]; 
     Queue      wait;
     byte*      stack;
+    Event*     event;
 } Task;
 
 typedef struct
@@ -56,6 +59,12 @@ typedef struct
     QueueNode head;
     Task task;
 } TaskNode;
+
+typedef struct
+{
+    QueueNode head;
+    AppInfo app;
+} AppNode;
 
 enum
 {
@@ -70,7 +79,7 @@ void TaskModInit();
 void LaunchTask();
 void Schedule();
 void TaskCallHandler(uint cmd, uint param1, uint param2);
-void MtxSchedule(uint action);
+void EventSchedule(uint action, Event* event);
 void KillTask();
 void WaitTask(const char* name);
 
