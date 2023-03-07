@@ -75,3 +75,21 @@ uint DestroyMutex(uint mutex)
     
     return ret;
 }
+
+uint ReadKey()
+{
+    uint ret = 0;
+    
+    SysCall(2, 0, &ret, 0);
+    
+    return ret;
+}
+
+uint GetMemSize()
+{
+    uint ret = 0;
+    
+    SysCall(3, 0, &ret, 0);
+    
+    return ret;
+}
