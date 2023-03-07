@@ -7,7 +7,7 @@
 #include "demo2.h"
 
 #define BUFF_SIZE     64
-#define PROMPT        "LemonOS >> "
+#define PROMPT        "D.T.OS >> "
 #define KEY_ENTER     0x0D
 #define KEY_BACKSPACE 0x08
 
@@ -37,16 +37,34 @@ static byte GetKeyCode(uint kc)
     return (byte)(kc >> 8);
 }
 
+static void Mem()
+{
+    uint ms = GetMemSize() >> 20;
+    int w = 0;
+    
+    SetPrintPos(CMD_START_W, CMD_START_H + 1);
+    
+    for(w=CMD_START_W; w<SCREEN_WIDTH; w++)
+    {
+        PrintChar(' ');
+    }
+    
+    SetPrintPos(CMD_START_W, CMD_START_H + 1);
+    PrintString("Physical Memory: ");
+    PrintIntDec(ms);
+    PrintString(" MB\n");
+}
+
 static void Clear()
 {
     int h = 0;
     int w = 0;
     
-    SetPrintPos(CMD_START_W, CMD_START_H);
+    SetPrintPos(ERR_START_W, ERR_START_H);
     
-    for(h=CMD_START_H; h<SCREEN_HEIGHT; h++)
+    for(h=ERR_START_H; h<SCREEN_HEIGHT; h++)
     {
-        for(w=CMD_START_W; w<SCREEN_WIDTH; w++)
+        for(w=ERR_START_W; w<SCREEN_WIDTH; w++)
         {
             PrintChar(' ');
         }
@@ -58,7 +76,7 @@ static void Clear()
 
 static void AddCmdEntry(const char* cmd, void(*run)())
 {
-    CmdRun* cr = Malloc(sizeof(CmdRun));
+    CmdRun* cr = (CmdRun*)Malloc(sizeof(CmdRun));
     
     if( cr && cmd && run )
     {
@@ -206,6 +224,7 @@ void Shell()
 {
     List_Init(&gCmdList);
     
+    AddCmdEntry("mem", Mem);
     AddCmdEntry("clear", Clear);
     AddCmdEntry("demo1", Demo1);
     AddCmdEntry("demo2", Demo2);
