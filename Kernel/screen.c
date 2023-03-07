@@ -6,6 +6,16 @@ static byte gPosW = 0;
 static byte gPosH = 0;
 static byte gColor = SCREEN_WHITE;
 
+byte GetPrintPosH()
+{
+    return gPosH;
+}
+
+byte GetPrintPosW()
+{
+    return gPosW;
+}
+
 void ClearScreen()
 {
     int h = 0;
@@ -181,7 +191,3 @@ int PrintIntDec(int n)
     
     return ret;
 }
-
-
-
-
