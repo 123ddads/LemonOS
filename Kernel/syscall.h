@@ -18,4 +18,7 @@ void EnterCritical(uint mutex);
 void ExitCritical(uint mutex);
 uint DestroyMutex(uint mutex);
 
+uint ReadKey();
+uint GetMemSize();
+
 #endif
