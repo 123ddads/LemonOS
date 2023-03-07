@@ -7,6 +7,13 @@
 #define SCREEN_WIDTH    80
 #define SCREEN_HEIGHT   25
 
+#define ERR_START_W   0
+#define ERR_START_H   6
+#define CMD_START_W   0
+#define CMD_START_H   9
+#define TASK_START_W  0
+#define TASK_START_H  12
+
 typedef enum
 {
     SCREEN_GRAY   = 0x07,
@@ -24,6 +31,7 @@ int PrintChar(char c);
 int PrintString(const char* s);
 int PrintIntDec(int n);
 int PrintIntHex(uint n);
-
+byte GetPrintPosH();
+byte GetPrintPosW();
 
 #endif
