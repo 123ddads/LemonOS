@@ -9,6 +9,8 @@ global SegmentFaultHandlerEntry
 
 global ReadPort
 global WritePort
+global ReadPortW
+global WritePortW
 
 extern TimerHandler
 extern KeyboardHandler
@@ -16,6 +18,7 @@ extern SysCallHandler
 extern PageFaultHandler
 extern SegmentFaultHandler
 
+extern gMemSize
 extern gCTaskAddr
 extern gGdtInfo
 extern gIdtInfo
@@ -117,6 +120,9 @@ InitGlobal:
     mov eax, dword [LoadTaskEntry]
     mov dword [LoadTask], eax
     
+    mov eax, dword [MemSize]
+    mov dword [gMemSize], eax
+    
     leave
     
     ret
@@ -162,6 +168,49 @@ WritePort:
     
     ret
 
+;
+; void ReadPortW(ushort port, ushort* buf, uint n)
+; 
+ReadPortW:
+    push ebp
+    mov  ebp, esp
+    
+    mov edx, [ebp + 8]   ; port
+    mov edi, [ebp + 12]  ; buf
+    mov ecx, [ebp + 16]  ; n
+    
+    cld
+    rep insw
+    
+    nop
+    nop
+    nop
+    
+    leave
+    
+    ret
+
+;
+; void WritePortW(ushort port, ushort* buf, uint n)
+;
+WritePortW:
+    push ebp
+    mov  ebp, esp
+    
+    mov edx, [ebp + 8]   ; port
+    mov esi, [ebp + 12]  ; buf
+    mov ecx, [ebp + 16]  ; n
+    
+    cld
+    rep outsw
+    
+    nop
+    nop
+    nop
+    
+    leave
+    
+    ret
 
 ;
 ;
